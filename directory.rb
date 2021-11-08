@@ -1,4 +1,6 @@
+require 'csv'
 @students = []
+@filename = ARGV.first
 
 def input_students
     puts "Please enter the names of the students"
@@ -8,7 +10,7 @@ def input_students
     # while the name is not empty, repeat this code
     while !name.empty? do
       # add the student hash to the array
-      @students << {name: name, cohort: :november}
+      add_students(name, "november")
       puts "Now we have #{@students.count} students"
       # get another name from the user
       name = STDIN.gets.chomp
@@ -34,8 +36,8 @@ def print_menu
     # 1. print the menu and ask the user what to do
     puts "1. Input the students"
     puts "2. Show the students"
-    puts "3. Save the list to students.csv"
-    puts "4. Load the list from students.csv"
+    puts "3. Save the list"
+    puts "4. Load the list"
     puts "9. Exit"
 end
 
@@ -54,7 +56,7 @@ def process(selection)
     when "3"
       save_students
     when "4"
-      load_students
+      check_if_file_exists(enter_filename)
     when "9"
       exit
     else 
@@ -70,27 +72,33 @@ def interactive_menu
 end
 
 def save_students
-  file = File.open("students.csv", "w")
-  @students.each do |student|
-    student_data = [student[:name], student[:cohort]]
-    csv_line = student_data.join(",")
-    file.puts csv_line
+  CSV.open(enter_filename, "wb") do |csv|
+    @students.each do |student|
+      student_data = [student[:name], student[:cohort]]
+      csv << student_data
+    end
   end
-  file.close
+  puts "Sucessfully saved list"
 end
 
-def load_students(filename = "students.csv")
-  file = File.open(filename, "r")
-  file.readlines.each do |line|
-    name, cohort = line.chomp.split(",")
-    @students << {name: name, cohort: cohort.to_sym}
+def add_students(name, cohort)
+  @students << {name: name, cohort: cohort.to_sym}
+end
+
+def load_students(filename)
+  CSV.foreach (filename) do |row|
+    name, cohort = row.join(",").chomp.split(",")
+    add_students(name, cohort)
   end
-  file.close
+  puts "Sucessfully loaded list"
 end
 
 def try_load_students
-  filename = ARGV.first
-  return if filename.nil?
+  @filename = "students.csv" if @filename.nil?
+  check_if_file_exists(@filename)
+end
+
+def check_if_file_exists(filename)
   if File.exists?(filename)
     load_students(filename)
     puts "Loaded #{@students.count} from #{filename}"
@@ -100,6 +108,10 @@ def try_load_students
   end
 end
 
+def enter_filename
+  puts "Enter filename"
+  input = gets.chomp
+end
+
 try_load_students
 interactive_menu
-
